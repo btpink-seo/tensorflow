@@ -1,0 +1,3 @@
+model_checkpoint_path: "dnn.ckpt-8"
+all_model_checkpoint_paths: "dnn.ckpt-7"
+all_model_checkpoint_paths: "dnn.ckpt-8"

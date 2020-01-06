@@ -31,7 +31,6 @@ b2 = tf.Variable(tf.zeros([3]))
 L1 = tf.add(tf.matmul(X, W1), b1)
 L1 = tf.nn.relu(L1)
 
-# 배열 내의 결괏값들을 전체 합이 1이 되도록 다듬어줌
 model = tf.add(tf.matmul(L1, W2), b2)
 
 # 교차 엔트로피 함수
