@@ -26,7 +26,8 @@ with tf.name_scope('optimizer'):
     optimizer = tf.train.AdamOptimizer(learning_rate=0.01)
     train_op = optimizer.minimize(cost, global_step=global_step)
 
-tf.summary.scalar('cost', cost)
+    tf.summary.scalar('cost', cost)
+    tf.summary.histogram("Weights", W1)
 
 sess = tf.Session()
 saver = tf.train.Saver(tf.global_variables())
