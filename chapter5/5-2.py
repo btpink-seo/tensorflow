@@ -1,7 +1,7 @@
 import tensorflow as tf
 import numpy as np
 
-data = np.loadtxt('./5-1.csv', delimiter=',', unpact=True, dtype='float32')
+data = np.loadtxt('./5-1.csv', delimiter=',', unpack=True, dtype='float32')
 x_data = np.transpose(data[0:2])
 y_data = np.transpose(data[2:])
 
@@ -44,3 +44,16 @@ for step in range(100):
     sess.run(train_op, feed_dict={X: x_data, Y: y_data})
     print('Step: %d, ' % sess.run(global_step), 'Cost: %.3f' % sess.run(cost, feed_dict={X: x_data, Y: y_data}))
 
+    summary = sess.run(merged, feed_dict={X: x_data, Y: y_data})
+    writer.add_summary(summary, global_step=sess.run(global_step))
+
+saver.save(sess, './model/dnn.ckpt', global_step=global_step)
+
+prediction = tf.argmax(model, 1)
+target = tf.argmax(Y, 1)
+print('예측값:', sess.run(prediction, feed_dict={X: x_data}))
+print('실측값:', sess.run(target, feed_dict={Y: y_data}))
+
+is_correct = tf.equal(prediction, target)
+accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float32))
+print('정확도: %.2f' % sess.run(accuracy * 100, feed_dict={X: x_data, Y: y_data}))
