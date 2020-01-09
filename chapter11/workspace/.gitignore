@@ -1,4 +1,4 @@
 /inception/*
-
+/bottlenecks/*
 /flowers_graph.pb
 /flowers_labels.txt

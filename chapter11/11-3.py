@@ -1,4 +1,5 @@
 # https://github.com/tensorflow/tensorflow/blob/c565660e008cf666c582668cb0d0937ca86e71fb/tensorflow/examples/image_retraining/retrain.py
+# python3 retrain.py --bottleneck_dir=./workspace/bottlenecks --model_dir=./workspace/inception --output_graph=./workspace/flowers_graph.pb --output_labels=./workspace/flowers_labels.txt --image_dir ./workspace/flower_photos --how_many_training_steps 1000
 
 import tensorflow as tf
 import matplotlib.pyplot as plt
