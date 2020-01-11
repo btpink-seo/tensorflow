@@ -19,7 +19,7 @@ def hypothesis(x):
 
 # 손실값을 계산하는 함수
 # 손실값 : 실제값과 모델로 예측한 값이 얼마나 차이가 나는가를 나타냄
-loss = lambda: tf.reduce_mean(tf.square((W * x_data + b) - y_data))
+loss = lambda: tf.reduce_mean(tf.square(hypothesis(x_data) - y_data))
 
 # 경사하강법 최적화 함수를 이용해 손실값을 최소화하는 연산 그래프를 생성
 # learning_rate : 학습을 얼마나 급격히 할 것인가 -> 하이퍼파라메터
