@@ -30,8 +30,6 @@ def foward(x):
 
 # 교차 엔트로피 함수
 loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_data, logits=foward(hidden(x_data))))
-
-# 경사하강법
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 # 학습
