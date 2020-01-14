@@ -15,31 +15,34 @@ y_data = np.array([
 ], dtype='float32')
 
 # [입력층(특징 수), 출력층(레이블 수)] -> [2, 3]
-W = tf.Variable(tf.random.uniform([2, 3], -1., 1.), trainable=True, dtype=tf.float32)
-b = tf.Variable(tf.zeros([3]), trainable=True, dtype=tf.float32)
+W1 = tf.Variable(tf.random.uniform([2, 10], -1., 1.), trainable=True, dtype=tf.float32)
+b1 = tf.Variable(tf.zeros([10]), trainable=True, dtype=tf.float32)
+W2 = tf.Variable(tf.random.uniform([10, 3], -1., 1.), trainable=True, dtype=tf.float32)
+b2 = tf.Variable(tf.zeros([3]), trainable=True, dtype=tf.float32)
 
-# 활성화 함수
 @tf.function
-def hypothesis(x):
-    return tf.nn.relu(tf.add(tf.matmul(x, W), b))
+def hidden(x):
+    return tf.nn.relu(tf.add(tf.matmul(x, W1), b1))
 
-model = hypothesis(x_data)
+@tf.function
+def foward(x):
+    return tf.add(tf.matmul(x, W2), b2)
 
 # 교차 엔트로피 함수
-loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_data, logits=hypothesis(x_data)))
+loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_data, logits=foward(hidden(x_data))))
 
 # 경사하강법
-optimizer = tf.keras.optimizers.SGD(learning_rate=0.1)
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 # 학습
 for step in range(100):
-    optimizer.minimize(loss, var_list=[W, b])
+    optimizer.minimize(loss, var_list=[W1, b1, W2, b2])
 
     if (step + 1) % 10 == 0:
         print(step + 1, loss().numpy())
 
 # 결과
-prediction = tf.argmax(tf.nn.softmax(model), axis=1)
+prediction = tf.argmax(foward(hidden(x_data)), axis=1)
 target = tf.argmax(y_data, axis=1)
 print('예측값 : ', prediction.numpy())
 print('실측값 : ', target.numpy())
