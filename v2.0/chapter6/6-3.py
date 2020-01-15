@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import os
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 file_name = Path(__file__).stem
 
@@ -14,7 +15,8 @@ y_train, y_test = tf.one_hot(y_train, 10), tf.one_hot(y_test, 10)
 
 batch_size = 100
 total_batch = int(len(x_train) / batch_size)
-EPOCHS = 3
+EPOCHS = 150
+RATE = 0.5
 
 train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(10000).batch(batch_size)
 test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size)
@@ -24,15 +26,15 @@ with tf.name_scope("layer1"):
     W1 = tf.Variable(tf.random.normal([784, 256], stddev=0.01, dtype=tf.float64), name="W1")
     b1 = tf.Variable(tf.zeros([256], dtype=tf.float64), name="b1")
     @tf.function
-    def hidden1(x):
-        return tf.nn.relu(tf.add(tf.matmul(x, W1), b1))
+    def hidden1(x, rate):
+        return tf.nn.dropout(tf.nn.relu(tf.add(tf.matmul(x, W1), b1)), rate=rate)
 
 with tf.name_scope("layer2"):
     W2 = tf.Variable(tf.random.normal([256, 256], stddev=0.01, dtype=tf.float64), name="W2")
     b2 = tf.Variable(tf.zeros([256], dtype=tf.float64), name="b2")
     @tf.function
-    def hidden2(x):
-        return tf.nn.relu(tf.add(tf.matmul(x, W2), b2))
+    def hidden2(x, rate):
+        return tf.nn.dropout(tf.nn.relu(tf.add(tf.matmul(x, W2), b2)), rate=rate)
 
 with tf.name_scope("output"):
     W3 = tf.Variable(tf.random.normal([256, 10], stddev=0.01, dtype=tf.float64), name="W3")
@@ -44,6 +46,10 @@ with tf.name_scope("output"):
 with tf.name_scope("optimizer"):
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
+@tf.function
+def model(images, rate=0):
+    return foward(hidden2(hidden1(images, rate), rate))
+
 # save & restore checkpoint
 checkpoint_directory = "./{}/".format(file_name)
 if not os.path.exists(checkpoint_directory):
@@ -54,11 +60,8 @@ checkpoint = tf.train.Checkpoint(W1=W1, W2=W2, W3=W3, b1=b1, b2=b2, b3=b3)
 checkpoint.restore(tf.train.latest_checkpoint(checkpoint_directory))
 
 # tensorboard
-# stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-# logdir = 'logs/func/%s' % stamp
 train_writer = tf.summary.create_file_writer("logs/{}/train".format(file_name))
 test_writer = tf.summary.create_file_writer("logs/{}/test".format(file_name))
-# tf.summary.trace_on()
 
 # 학습
 for epoch in range(EPOCHS):
@@ -66,16 +69,16 @@ for epoch in range(EPOCHS):
     total_test_loss = 0
 
     for images, labels in train_ds:
-        loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=foward(hidden2(hidden1(images)))))
+        loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=model(images, RATE)))
         optimizer.minimize(loss, var_list=[W1, b1, W2, b2, W3, b3])
         total_loss += loss().numpy()
-        is_correct = tf.equal(tf.argmax(foward(hidden2(hidden1(images))), 1), tf.argmax(labels, 1))
+        is_correct = tf.equal(tf.argmax(model(images), 1), tf.argmax(labels, 1))
         accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float64))
 
     for test_images, test_labels in test_ds:
-        loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=test_labels, logits=foward(hidden2(hidden1(test_images)))))
+        loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=test_labels, logits=model(test_images)))
         total_test_loss += loss().numpy()
-        is_test_correct = tf.equal(tf.argmax(foward(hidden2(hidden1(test_images))), 1), tf.argmax(test_labels, 1))
+        is_test_correct = tf.equal(tf.argmax(model(test_images), 1), tf.argmax(test_labels, 1))
         test_accuracy = tf.reduce_mean(tf.cast(is_test_correct, tf.float64))
 
     # save checkpoint
@@ -91,4 +94,16 @@ for epoch in range(EPOCHS):
 
     template = 'epoch: {}, loss: {}, accuracy: {}%, test loss: {}, test accuracy: {}%'
     print(template.format(checkpoint.save_counter.numpy(), total_loss / total_batch, accuracy*100, total_test_loss / total_batch, test_accuracy*100))
-# tf.summary.trace_export(name="model{}".format(checkpoint.save_counter.numpy()), step=checkpoint.save_counter)
+
+# plot
+plot_labels = model(x_test)
+
+fig = plt.figure()
+for i in range(10):
+    subplot = fig.add_subplot(2, 5, i + 1)
+    subplot.set_xticks([])
+    subplot.set_yticks([])
+    subplot.set_title('%d' % np.argmax(plot_labels[i]))
+    subplot.imshow(x_test[i].reshape((28, 28)))
+
+plt.show()
