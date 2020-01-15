@@ -40,6 +40,9 @@ loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=y_d
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 checkpoint_directory = "./model/"
+if not os.path.exists(checkpoint_directory):
+    os.mkdir(checkpoint_directory)
+
 checkpoint_prefix = os.path.join(checkpoint_directory, "ckpt")
 
 checkpoint = tf.train.Checkpoint(W1=W1, W2=W2, W3=W3, b1=b1, b2=b2, b3=b3)
