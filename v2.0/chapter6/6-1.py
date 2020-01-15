@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+file_name = Path(__file__).stem
+
 # set mnist data
 mnist = tf.keras.datasets.mnist
 
@@ -44,7 +46,7 @@ with tf.name_scope("optimizer"):
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 # save & restore checkpoint
-checkpoint_directory = "./{}/".format(Path(__file__).stem)
+checkpoint_directory = "./{}/".format(file_name)
 if not os.path.exists(checkpoint_directory):
     os.mkdir(checkpoint_directory)
 
@@ -55,8 +57,8 @@ checkpoint.restore(tf.train.latest_checkpoint(checkpoint_directory))
 # tensorboard
 # stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
 # logdir = 'logs/func/%s' % stamp
-train_writer = tf.summary.create_file_writer("logs/func/train")
-test_writer = tf.summary.create_file_writer("logs/func/test")
+train_writer = tf.summary.create_file_writer("logs/{}/train".format(file_name))
+test_writer = tf.summary.create_file_writer("logs/{}/test".format(file_name))
 # tf.summary.trace_on()
 
 # 학습
