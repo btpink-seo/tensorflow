@@ -2,6 +2,7 @@ import tensorflow as tf
 import numpy as np
 import os
 from pathlib import Path
+from datetime import datetime
 
 # set mnist data
 mnist = tf.keras.datasets.mnist
@@ -12,7 +13,7 @@ y_train, y_test = tf.one_hot(y_train, 10), tf.one_hot(y_test, 10)
 
 batch_size = 100
 total_batch = int(len(x_train) / batch_size)
-EPOCHS = 15
+EPOCHS = 3
 
 train_ds = tf.data.Dataset.from_tensor_slices((x_train, y_train)).shuffle(10000).batch(batch_size)
 test_ds = tf.data.Dataset.from_tensor_slices((x_test, y_test)).batch(batch_size)
@@ -52,42 +53,41 @@ checkpoint = tf.train.Checkpoint(W1=W1, W2=W2, W3=W3, b1=b1, b2=b2, b3=b3)
 checkpoint.restore(tf.train.latest_checkpoint(checkpoint_directory))
 
 # tensorboard
-writer = tf.summary.create_file_writer("./logs")
+# stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+# logdir = 'logs/func/%s' % stamp
+train_writer = tf.summary.create_file_writer("logs/func/train")
+test_writer = tf.summary.create_file_writer("logs/func/test")
+# tf.summary.trace_on()
 
 # 학습
-with writer.as_default():
-    for epoch in range(EPOCHS):
-        total_loss = 0
-        total_test_loss = 0
+for epoch in range(EPOCHS):
+    total_loss = 0
+    total_test_loss = 0
 
-        for images, labels in train_ds:
-            loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=foward(hidden2(hidden1(images)))))
-            optimizer.minimize(loss, var_list=[W1, b1, W2, b2, W3, b3])
-            total_loss += loss().numpy()
-            is_correct = tf.equal(tf.argmax(foward(hidden2(hidden1(images))), 1), tf.argmax(labels, 1))
-            accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float64))
+    for images, labels in train_ds:
+        loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=foward(hidden2(hidden1(images)))))
+        optimizer.minimize(loss, var_list=[W1, b1, W2, b2, W3, b3])
+        total_loss += loss().numpy()
+        is_correct = tf.equal(tf.argmax(foward(hidden2(hidden1(images))), 1), tf.argmax(labels, 1))
+        accuracy = tf.reduce_mean(tf.cast(is_correct, tf.float64))
 
-        for test_images, test_labels in test_ds:
-            loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=test_labels, logits=foward(hidden2(hidden1(test_images)))))
-            total_test_loss += loss().numpy()
-            is_test_correct = tf.equal(tf.argmax(foward(hidden2(hidden1(test_images))), 1), tf.argmax(test_labels, 1))
-            test_accuracy = tf.reduce_mean(tf.cast(is_test_correct, tf.float64))
+    for test_images, test_labels in test_ds:
+        loss = lambda: tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(labels=test_labels, logits=foward(hidden2(hidden1(test_images)))))
+        total_test_loss += loss().numpy()
+        is_test_correct = tf.equal(tf.argmax(foward(hidden2(hidden1(test_images))), 1), tf.argmax(test_labels, 1))
+        test_accuracy = tf.reduce_mean(tf.cast(is_test_correct, tf.float64))
 
-        # save checkpoint
-        checkpoint.save(file_prefix=checkpoint_prefix)
+    # save checkpoint
+    checkpoint.save(file_prefix=checkpoint_prefix)
 
-        # save ckpt
+    # save ckpt
+    with train_writer.as_default():
         tf.summary.scalar("loss", (total_loss / total_batch), step=checkpoint.save_counter)
-        tf.summary.scalar("test_loss", (total_test_loss / total_batch), step=checkpoint.save_counter)
         tf.summary.scalar("accuracy", accuracy*100, step=checkpoint.save_counter)
-        tf.summary.scalar("test_accuracy", test_accuracy*100, step=checkpoint.save_counter)
-        tf.summary.histogram("W1", W1, step=checkpoint.save_counter)
-        tf.summary.histogram("W2", W1, step=checkpoint.save_counter)
-        tf.summary.histogram("W3", W1, step=checkpoint.save_counter)
-        tf.summary.histogram("b1", W1, step=checkpoint.save_counter)
-        tf.summary.histogram("b2", W1, step=checkpoint.save_counter)
-        tf.summary.histogram("b3", W1, step=checkpoint.save_counter)
-        writer.flush()
+    with test_writer.as_default():
+        tf.summary.scalar("loss", (total_test_loss / total_batch), step=checkpoint.save_counter)
+        tf.summary.scalar("accuracy", test_accuracy*100, step=checkpoint.save_counter)
 
-        template = 'epoch: {}, loss: {}, accuracy: {}%, test loss: {}, test accuracy: {}%'
-        print(template.format(checkpoint.save_counter.numpy(), (total_loss / total_batch), accuracy*100, total_test_loss / total_batch, test_accuracy*100))
+    template = 'epoch: {}, loss: {}, accuracy: {}%, test loss: {}, test accuracy: {}%'
+    print(template.format(checkpoint.save_counter.numpy(), total_loss / total_batch, accuracy*100, total_test_loss / total_batch, test_accuracy*100))
+# tf.summary.trace_export(name="model{}".format(checkpoint.save_counter.numpy()), step=checkpoint.save_counter)
