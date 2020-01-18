@@ -74,7 +74,6 @@ with tf.name_scope("ckpt"):
 # tensorboard
 with tf.name_scope("tensorboard"):
     train_writer = tf.summary.create_file_writer("logs/{}/train".format(FILE_NAME))
-    test_writer = tf.summary.create_file_writer("logs/{}/test".format(FILE_NAME))
 
 # training
 for epoch in range(EPOCHS):
